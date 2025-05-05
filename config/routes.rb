@@ -146,8 +146,9 @@ Rails.application.routes.draw do
   end
 
   constraints DiscoverDomainConstraint do
-    get "/", to: "discover#index", as: :discover
+    get "/", to: "home#about"
 
+    get "/discover", to: "discover#index"
     get "/discover/recommended_products", to: "discover#recommended_products", as: :discover_recommended_products
     namespace :discover do
       resources :recommended_wishlists, only: [:index]
@@ -156,7 +157,7 @@ Rails.application.routes.draw do
     product_info_and_purchase_routes
 
     constraints DiscoverTaxonomyConstraint do
-      get "/*taxonomy", to: "discover#index"
+      get "/*taxonomy", to: "discover#index", as: :discover_taxonomy
     end
 
     get "/animation(*path)", to: redirect { |_, req| req.fullpath.sub("animation", "3d") }
@@ -231,6 +232,7 @@ Rails.application.routes.draw do
           resources :users, only: [] do
             collection do
               get :user_info
+              post :create_appeal
               post :user_suspension_info
               post :send_reset_password_instructions
               post :update_email
@@ -266,6 +268,8 @@ Rails.application.routes.draw do
   end
 
   get "/s3_utility/cdn_url_for_blob", to: "s3_utility#cdn_url_for_blob"
+  get "/s3_utility/current_utc_time_string", to: "s3_utility#current_utc_time_string"
+  get "/s3_utility/generate_multipart_signature", to: "s3_utility#generate_multipart_signature"
 
   constraints GumroadDomainConstraint do
     get "/about", to: "home#about"
@@ -621,6 +625,16 @@ Rails.application.routes.draw do
     put "/product_reviews/set", to: "product_reviews#set", format: :json
     resources :product_reviews, only: [:index, :show]
     resource :product_review_response, only: [:update], format: :json
+    resources :product_review_videos, only: [] do
+      scope module: :product_review_videos do
+        resource :stream, only: [:show]
+        resources :streaming_urls, only: [:index]
+      end
+    end
+    namespace :product_review_videos do
+      resource :upload_context, only: [:show]
+    end
+
     resources :calls, only: [:update]
 
     resources :purchase_custom_fields, only: [:create]
@@ -725,10 +739,6 @@ Rails.application.routes.draw do
     # events
     post "/events/track_user_action", to: "events#create"
 
-    # s3 utility
-    get "/s3_utility/generate_multipart_signature", to: "s3_utility#generate_multipart_signature"
-    get "/s3_utility/current_utc_time_string", to: "s3_utility#current_utc_time_string"
-
     # product files utility
     get "/product_files_utility/external_link_title", to: "product_files_utility#external_link_title", as: :external_link_title
     get "/product_files_utility/product_files/:product_id", to: "product_files_utility#download_product_files", as: :download_product_files
@@ -745,7 +755,7 @@ Rails.application.routes.draw do
     get "/audience" => redirect("/dashboard/audience")
     get "/dashboard/audience", to: "audience#index", as: :audience_dashboard
     get "/audience/data/by_date/:start_time/:end_time", to: "audience#data_by_date", as: "audience_data_by_date"
-    get "/audience/export", to: "audience#export", as: :audience_export
+    post "/audience/export", to: "audience#export", as: :audience_export
     get "/dashboard/consumption" => redirect("/dashboard/audience")
 
     # invoices
@@ -934,6 +944,7 @@ Rails.application.routes.draw do
     get "/CHARGE" => redirect("/charge")
 
     # discover
+    get "/discover", to: "discover#index"
     get "/discover/categories",          to: "discover#categories"
     get "/discover_search_autocomplete", to: "discover/search_autocomplete#search"
 
@@ -1103,6 +1114,15 @@ Rails.application.routes.draw do
 
   resources :product_reviews, only: [:index, :show]
   resource :product_review_response, only: [:update], format: :json
+  resources :product_review_videos, only: [] do
+    scope module: :product_review_videos do
+      resource :stream, only: [:show]
+      resources :streaming_urls, only: [:index]
+    end
+  end
+  namespace :product_review_videos do
+    resource :upload_context, only: [:show]
+  end
 
   namespace :checkout do
     namespace :upsells do

@@ -224,16 +224,17 @@ class SettingsPresenter
       payout_threshold_cents: seller.minimum_payout_amount_cents,
       minimum_payout_threshold_cents: seller.minimum_payout_threshold_cents,
       payout_frequency: seller.payout_frequency,
+      payout_frequency_daily_supported: seller.instant_payouts_supported?,
     }
   end
 
   def seller_refund_policy
     {
       enabled: seller.account_level_refund_policy_enabled?,
-      allowed_refund_periods_in_days: SellerRefundPolicy::ALLOWED_REFUND_PERIODS_IN_DAYS.keys.map do
+      allowed_refund_periods_in_days: RefundPolicy::ALLOWED_REFUND_PERIODS_IN_DAYS.keys.map do
         {
           key: _1,
-          value: SellerRefundPolicy::ALLOWED_REFUND_PERIODS_IN_DAYS[_1]
+          value: RefundPolicy::ALLOWED_REFUND_PERIODS_IN_DAYS[_1]
         }
       end,
       max_refund_period_in_days: seller.refund_policy.max_refund_period_in_days,

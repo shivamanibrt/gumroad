@@ -161,7 +161,6 @@ describe UrlRedirectPresenter do
           variant_name: nil,
           product_permalink: @product.unique_permalink,
           allows_review: true,
-          video_reviews_enabled: @product.user.video_reviews_enabled?,
           disable_reviews_after_year: false,
           review: nil,
           membership: nil,
@@ -522,6 +521,28 @@ describe UrlRedirectPresenter do
             community = create(:community, seller: product.user, resource: product)
             expect(presenter.download_page_with_content_props[:content][:community_chat_url]).to eq(community_path(product.user.external_id, community.external_id))
           end
+
+          context "when user is not logged in" do
+            let(:presenter) { described_class.new(url_redirect:, logged_in_user: nil) }
+
+            it "returns login path with next parameter when user is not logged in" do
+              community = create(:community, seller: product.user, resource: product)
+              expected_path = login_path(email: purchase.email, next: community_path(product.user.external_id, community.external_id))
+              expect(presenter.download_page_with_content_props[:content][:community_chat_url]).to eq(expected_path)
+            end
+          end
+
+          context "when purchase has no purchaser_id" do
+            before do
+              purchase.update!(purchaser_id: nil)
+            end
+
+            it "returns signup path with next parameter" do
+              community = create(:community, seller: product.user, resource: product)
+              expected_path = signup_path(email: purchase.email, next: community_path(product.user.external_id, community.external_id))
+              expect(presenter.download_page_with_content_props[:content][:community_chat_url]).to eq(expected_path)
+            end
+          end
         end
       end
     end
@@ -568,7 +589,6 @@ describe UrlRedirectPresenter do
           product_permalink: @product.unique_permalink,
           product_long_url: @product.long_url,
           allows_review: true,
-          video_reviews_enabled: @product.user.video_reviews_enabled?,
           disable_reviews_after_year: true,
           review: nil,
           membership: {
